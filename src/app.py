@@ -67,55 +67,71 @@ with open("style.css", encoding="utf-8") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
-with st.container():
-    st.markdown("<div class='chat-history'>", unsafe_allow_html=True)
+with st.container(height=500):
+    # st.markdown("<div class='chat-history'>", unsafe_allow_html=True)
     # Hiển thị lịch sử trò chuyện
     for msg in st.session_state.messages:
         role = "assistant" if msg["role"] == "assistant" else "human"
         st.chat_message(role).write(msg["content"])
-    st.markdown("</div>", unsafe_allow_html=True)
+    # st.markdown("</div>", unsafe_allow_html=True)
 
 
 # Hàm xử lý câu hỏi và lưu vào lịch sử
 def process_question(prompt):
     # Hiển thị tin nhắn của người dùng
-    st.session_state.messages.append({"role": "human", "content": prompt})
-    st.chat_message("human").write(prompt)
+    # st.chat_message("human").write(prompt)
     msgs.add_user_message(prompt)
+    st.session_state.messages.append({"role": "human", "content": prompt})
+    #refresh page
 
     # Gọi AI để xử lý tin nhắn và nhận phản hồi
-    with st.chat_message("assistant"):
-        st_callback = StreamlitCallbackHandler(st.container())
+    # with st.chat_message("assistant"):
+    st_callback = StreamlitCallbackHandler(st.container())
 
         # Chuẩn bị lịch sử trò chuyện để gửi cho AI
-        chat_history = [
-            {"role": msg["role"], "content": msg["content"]}
-            for msg in st.session_state.messages[:-1]
-        ]
+    chat_history = [
+        {"role": msg["role"], "content": msg["content"]}
+        for msg in st.session_state.messages[:-1]
+    ]
 
         # Gọi hàm generate_answer
-        response = generate_answer(vector_db, prompt)
-        response = remove_json_formatting(response)
+    response = generate_answer(vector_db, prompt)
+    response = remove_json_formatting(response)
 
         # Lưu phản hồi của AI vào lịch sử và hiển thị
-        json_output = json.loads(response)
-        answer_text = json_output["answer"]
-        st.session_state.messages.append(
-            {"role": "assistant", "content": answer_text}
-        )
-        msgs.add_ai_message(answer_text)
-        st.write(answer_text)
+    print(response)
+    json_output = json.loads(response)
+    answer_text = json_output["answer"]
+    st.session_state.messages.append(
+        {"role": "assistant", "content": answer_text}
+    )
+    msgs.add_ai_message(answer_text)
+        # st.write(answer_text)
+    st.experimental_rerun()
 
 
-# Phần nhập câu hỏi ở cuối trang với vị trí cố định
-# Cố định vị trí của phần nhập câu hỏi ở cuối trang
+# Đảm bảo `user_input` được khởi tạo trong session_state
+if "user_input" not in st.session_state:
+    st.session_state.user_input = ""
+
+# Hàm để reset giá trị input
+def reset_user_input():
+    st.session_state.user_input = ""
+
+# Phần nhập câu hỏi
 with st.container():
     st.markdown("<div class='input-container'>", unsafe_allow_html=True)
     prompt = st.text_input(
         "Nhập câu hỏi về chứng khoán:",
+        value=st.session_state.user_input,
         key="user_input",
         placeholder="Nhập câu hỏi của bạn...",
+        on_change=reset_user_input,  # Reset sau khi gửi câu hỏi
     )
     if prompt:
         process_question(prompt)
     st.markdown("</div>", unsafe_allow_html=True)
+
+
+
+# Đm th Huy béo như con 
